@@ -86,9 +86,16 @@ duas frases: um sistema de monitoramento e controle em malha
 fechada (\textit{closed loop}) que mede a lat\^encia por pacote,
 detecta viola\c{c}\~oes do limiar de 5\,ms e atua automaticamente
 nos roteadores. Mencione as tr\^es abordagens de atua\c{c}\~ao
-comparadas: QoS cl\'assico com tc/HTB, SDN com Ryu/OpenFlow, e
-plano de dados program\'avel com P4/BMv2 e INT
+comparadas: QoS cl\'assico com tc/HTB \cite{linuxhtb}, SDN com
+OpenFlow sobre Open vSwitch (OVS) \cite{pfaff2015ovs,mckeown2008openflow},
+e plano de dados program\'avel com P4/BMv2 e INT
 \cite{kim2015int,bosshart2014p4}.
+
+\textbf{Nota t\'ecnica:} embora o P4 ofere\c{c}a decis\~ao no plano de dados,
+o switch de refer\^encia BMv2 \cite{bmv2} n\~ao conseguiu entregar
+lat\^encia consistentemente abaixo de 5\,ms quando o tr\'afego uRLLC
+foi gerado com Scapy sobre TCP. Por isso, a implementa\c{c}\~ao final
+adota OVS com QoS/OpenFlow, que atingiu o requisito de lat\^encia.
 
 O \textbf{quinto par\'agrafo} lista as contribui\c{c}\~oes do
 trabalho de forma objetiva. Cada item deve ser uma frase que
@@ -118,7 +125,10 @@ apenas diga como voc\^e os utilizou.
 \subsection{Topologia e Bancada Experimental}
 
 Descreva a topologia de rede criada no Mininet \cite{mininet}.
-Explique quantos hosts existem, quantos roteadores, como est\~ao
+Os quatro n\'os de transporte foram implementados como switches
+Open vSwitch (OVS) \cite{pfaff2015ovs}, configurados via OpenFlow 1.3
+\cite{mckeown2008openflow} para encaminhamento L2 e prioriza\c{c}\~ao de
+tr\'afego. Explique quantos hosts existem, quantos roteadores, como est\~ao
 conectados e qual \'e o papel de cada n\'o. Especifique os
 par\^ametros de cada enlace configurados com TCLink: largura de
 banda, atraso e tamanho m\'aximo de fila. Justifique o limiar de
@@ -145,8 +155,9 @@ a f\'ormula de c\'alculo da lat\^encia RTT por pacote:
 \noindent onde $t_{\text{tx}}$ \'e o instante de envio e
 $t_{\text{rx}}$ \'e o instante de recep\c{c}\~ao registrados
 pelo Scapy. Para o tr\'afego eMBB, descreva o uso do iperf3
-\cite{iperf} em modo UDP, com taxa suficiente para saturar o
-enlace de gargalo e for\c{c}ar viola\c{c}\~oes de lat\^encia.
+\cite{iperf} em modo UDP (ou TCP, quando indicado), com taxa
+suficiente para saturar o enlace de gargalo e for\c{c}ar
+viola\c{c}\~oes de lat\^encia.
 
 \subsection{M\'etricas de Avalia\c{c}\~ao}
 
@@ -195,24 +206,28 @@ apontando a principal limita\c{c}\~ao: a atua\c{c}\~ao \'e
 externa ao switch, o que resulta em tempo de rea\c{c}\~ao superior
 a um segundo.
 
-\subsection{Abordagem B -- SDN com Ryu/OpenFlow}
+\subsection{Abordagem B -- SDN com OpenFlow sobre OVS}
 
 Explique o conceito de SDN aplicado ao problema: o controlador
 centralizado tem vis\~ao global da rede e pode reprogramar as
-regras de encaminhamento dos switches em tempo real. Descreva
-como o controlador Ryu \cite{ryu} \'e executado externamente
-ao Mininet e se comunica com os switches OVS via protocolo
-OpenFlow\,1.3 \cite{mckeown2008openflow}. Explique a regra de
-fluxo que \'e instalada quando uma viola\c{c}\~ao \'e detectada:
-o \textit{match} casa pacotes com \texttt{tcp\_dst=5556} e DSCP
-EF, e a \textit{action} os redireciona para a fila de menor
-atraso com \texttt{OFPActionSetQueue(0)}. Mostre o trecho de
-c\'odigo Ryu que instala essa regra. Explique a diferena em
-rela\c{c}\~ao \`a Abordagem A: aqui a decis\~ao ainda \'e tomada
-fora do switch, mas a regra \'e instalada diretamente no plano
-de dados via OpenFlow, sem precisar de chamadas de sistema.
-Aponte a limita\c{c}\~ao: o tempo de rea\c{c}\~ao inclui o
-\textit{round-trip} entre o switch e o controlador.
+regras de encaminhamento dos switches em tempo real. Neste
+trabalho, as regras OpenFlow\,1.3 \cite{mckeown2008openflow} s\~ao
+instaladas diretamente nos switches Open vSwitch (OVS)
+\cite{pfaff2015ovs} do Mininet, sem a necessidade de um controlador
+Ryu externo. Explique a regra de fluxo que \'e instalada quando
+uma viola\c{c}\~ao \'e detectada: o \textit{match} casa pacotes
+com \texttt{tcp\_dst=5000} e DSCP EF, e a \textit{action} os
+redireciona para a fila de alta prioridade com
+\texttt{set\_queue:1}. Descreva tamb\'em a hierarquia de filas
+HTB \cite{linuxhtb} configurada em cada porta OVS, com duas filas:
+fila 0 (eMBB/default) e fila 1 (uRLLC). Mostre o trecho de
+c\'odigo Python que instala as regras via \texttt{ovs-ofctl}.
+Explique a diferen\c{c}a em rela\c{c}\~ao \`a Abordagem A: aqui
+as regras s\~ao instaladas diretamente no plano de dados via
+OpenFlow, sem precisar de chamadas de sistema para alterar
+\texttt{tc}. Aponte a limita\c{c}\~ao: a decis\~ao ainda \'e tomada
+no host de monitoramento, embora a aplica\c{c}\~ao das regras seja
+r\'apida.
 
 \subsection{Abordagem C -- Plano de Dados Program\'avel com P4/BMv2 + INT}
 

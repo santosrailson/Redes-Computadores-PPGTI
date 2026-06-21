@@ -1,0 +1,13 @@
+# LaTeX intermediarios
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+
+# PDF descomente a linha abaixo se nao quiser versionar o PDF gerado
+# *.pdf
