@@ -1,0 +1,343 @@
+\documentclass[12pt]{article}
+
+\usepackage{sbc-template}
+\usepackage{graphicx,url}
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel}
+\usepackage{amsmath}
+\usepackage{booktabs}
+
+\sloppy
+
+\title{Sistema de Monitoramento e Controle para
+Aplica\c{c}\~oes Sens\'iveis \`a Lat\^encia em Rede de Transporte 5G com P4}
+
+\author{Railson dos Santos Silva\inst{1}}
+
+\address{
+  Programa de Pós Graduação em Tecnologia da Informação (PPGTI) \\
+  Instituto Federal da Para\'iba (IFPB)\\
+  Jo\~ao Pessoa -- PB -- Brasil
+  \email{santos.railson@academico.ifpb.edu.br}
+}
+
+\begin{document}
+\maketitle
+
+% -------------------------------------------------------------------
+\begin{abstract}
+O abstract \'e escrito em ingl\^es e deve ter no m\'aximo 10 linhas.
+Ele \'e a primeira coisa que o leitor v\^e, por isso precisa ser
+direto e completo. Escreva-o por \'ultimo, depois de terminar o
+artigo. Um bom abstract responde a quatro perguntas nesta ordem:
+(1)~Qual \'e o problema ou cen\'ario abordado?
+(2)~O que foi proposto para resolver o problema?
+(3)~Como a proposta foi implementada ou avaliada?
+(4)~Qual foi o principal resultado obtido?
+Evite detalhes t\'ecnicos profundos, siglas n\~ao definidas e
+refer\^encias bibliogr\'aficas.
+\end{abstract}
+
+\begin{resumo}
+O resumo \'e a tradu\c{c}\~ao fiel do abstract acima, escrito em
+portugu\^es, com no m\'aximo 10 linhas. Use exatamente a mesma
+estrutura e as mesmas informa\c{c}\~oes -- n\~ao adicione nem
+remova nada. Mantenha os termos t\'ecnicos em ingl\^es quando
+necess\'ario, em it\'alico: \textit{closed loop},
+\textit{in-band telemetry}, \textit{software-defined networking}.
+Assim como o abstract, o resumo deve ser escrito por \'ultimo.
+\end{resumo}
+
+% ===================================================================
+\section{Introdu\c{c}\~ao}
+% ===================================================================
+
+A introdu\c{c}\~ao tem como objetivo convencer o leitor de que o
+problema que voc\^e estudou \'e importante e que a sua solu\c{c}\~ao
+\'e relevante. Pense nela como um funil: comece falando do contexto
+geral e v\'a afunilando at\'e chegar exatamente no seu trabalho.
+Escreva em par\'agrafos corridos, sem t\'opicos ou listas.
+
+O \textbf{primeiro par\'agrafo} apresenta o cen\'ario macro: fale
+sobre redes 5G, as tr\^es classes de servi\c{c}o (uRLLC, eMBB e
+mMTC), e destaque os requisitos rigorosos do uRLLC -- lat\^encia
+abaixo de 1\,ms e confiabilidade de $10^{-5}$ -- definidos pelo
+3GPP e pela ITU \cite{itu2017m2410,3gpp23501}. Contextualize onde
+esses requisitos se aplicam: automa\c{c}\~ao industrial, ve\'iculos
+conectados, cirurgia remota.
+
+O \textbf{segundo par\'agrafo} descreve o problema concreto: na
+rede de transporte da operadora, os fluxos uRLLC compartilham as
+mesmas filas dos roteadores com o tr\'afego eMBB, que \'e
+volum\'atico. Quando o eMBB satura o enlace, a fila enche e a
+lat\^encia do uRLLC ultrapassa o limiar aceit\'avel
+\cite{latencyaware2025slicing,slicing2023efficient}. Explique por
+que isso \'e cr\'itico.
+
+O \textbf{terceiro par\'agrafo} aponta a lacuna na literatura:
+os mecanismos cl\'assicos de QoS \cite{rfc3246,rfc2474} s\~ao
+est\'aticos -- eles configuram prioridades fixas e n\~ao reagem
+a varia\c{c}\~oes de carga em tempo real. Diga o que os trabalhos
+mais recentes j\'a tentaram e o que ainda n\~ao foi feito
+\cite{shu2020qosframework,cugini2019int,paolucci2022latency}.
+
+O \textbf{quarto par\'agrafo} apresenta a sua proposta em uma ou
+duas frases: um sistema de monitoramento e controle em malha
+fechada (\textit{closed loop}) que mede a lat\^encia por pacote,
+detecta viola\c{c}\~oes do limiar de 5\,ms e atua automaticamente
+nos roteadores. Mencione as tr\^es abordagens de atua\c{c}\~ao
+comparadas: QoS cl\'assico com tc/HTB, SDN com Ryu/OpenFlow, e
+plano de dados program\'avel com P4/BMv2 e INT
+\cite{kim2015int,bosshart2014p4}.
+
+O \textbf{quinto par\'agrafo} lista as contribui\c{c}\~oes do
+trabalho de forma objetiva. Cada item deve ser uma frase que
+come\c{c}a com um verbo de a\c{c}\~ao: ``Propomos...'',
+``Implementamos...'', ``Demonstramos...''. Apresente de 2 a 4
+contribui\c{c}\~oes reais -- n\~ao invente contribui\c{c}\~oes
+que o trabalho n\~ao faz.
+
+O \textbf{\'ultimo par\'agrafo} descreve a organiza\c{c}\~ao do
+artigo: ``O restante deste artigo est\'a organizado da seguinte
+forma. A Se\c{c}\~ao~2 descreve a metodologia utilizada. A
+Se\c{c}\~ao~3 apresenta o sistema proposto. A Se\c{c}\~ao~4
+avalia os resultados. A Se\c{c}\~ao~5 conclui o trabalho.''
+
+% ===================================================================
+\section{Metodologia}
+% ===================================================================
+
+A metodologia descreve \textit{como} o experimento foi conduzido.
+O objetivo desta se\c{c}\~ao \'e permitir que outro pesquisador
+consiga reproduzir o seu trabalho exatamente da mesma forma. Por
+isso, seja preciso: cite n\'umeros, vers\~oes de ferramentas,
+par\^ametros de configura\c{c}\~ao e justifique as escolhas feitas.
+N\~ao explique o que \'e o Mininet ou o Scapy em profundidade --
+apenas diga como voc\^e os utilizou.
+
+\subsection{Topologia e Bancada Experimental}
+
+Descreva a topologia de rede criada no Mininet \cite{mininet}.
+Explique quantos hosts existem, quantos roteadores, como est\~ao
+conectados e qual \'e o papel de cada n\'o. Especifique os
+par\^ametros de cada enlace configurados com TCLink: largura de
+banda, atraso e tamanho m\'aximo de fila. Justifique o limiar de
+5\,ms escolhido para o uRLLC com base no 5QI\,85 definido no
+3GPP TS\,23.501 \cite{3gpp23501}. Inclua uma figura da topologia
+(\verb|\includegraphics|) com legenda descritiva. Ao final,
+descreva o ambiente de testes: especifica\c{c}\~oes de hardware
+(CPU, mem\'oria RAM), sistema operacional e vers\~oes de todas as
+ferramentas usadas (Mininet, Python, Scapy, Ryu, p4c, BMv2).
+
+\subsection{Gera\c{c}\~ao de Tr\'afego}
+
+Explique como cada tipo de tr\'afego foi gerado. Para o tr\'afego
+uRLLC, descreva o script em Scapy \cite{scapy}: o tipo de pacote
+(TCP SYN), a marca\c{c}\~ao DSCP EF com \texttt{tos=0xB8}
+\cite{rfc3246}, a porta de destino e a taxa de envio. Apresente
+a f\'ormula de c\'alculo da lat\^encia RTT por pacote:
+
+\begin{equation}
+  \text{RTT}_i = (t_{\text{rx},i} - t_{\text{tx},i}) \times 10^3
+  \quad [\text{ms}]
+\end{equation}
+
+\noindent onde $t_{\text{tx}}$ \'e o instante de envio e
+$t_{\text{rx}}$ \'e o instante de recep\c{c}\~ao registrados
+pelo Scapy. Para o tr\'afego eMBB, descreva o uso do iperf3
+\cite{iperf} em modo UDP, com taxa suficiente para saturar o
+enlace de gargalo e for\c{c}ar viola\c{c}\~oes de lat\^encia.
+
+\subsection{M\'etricas de Avalia\c{c}\~ao}
+
+Defina cada m\'etrica que ser\'a usada na avalia\c{c}\~ao.
+Apresente uma defini\c{c}\~ao clara e formal de cada uma, pois
+o leitor precisa saber exatamente o que est\'a sendo medido.
+As m\'etricas recomendadas s\~ao: taxa de viola\c{c}\~ao do
+limiar (TV), que \'e a fra\c{c}\~ao de pacotes uRLLC com
+RTT superior a 5\,ms; lat\^encia mediana (P50) e percentil 99
+(P99), que descrevem a distribui\c{c}\~ao da lat\^encia; e
+tempo de rea\c{c}\~ao (TR), definido como o intervalo entre
+a primeira viola\c{c}\~ao detectada e o retorno da lat\^encia
+abaixo do limiar ap\'os a atua\c{c}\~ao do sistema.
+
+% ===================================================================
+\section{Proposta}
+% ===================================================================
+
+A proposta \'e a se\c{c}\~ao mais importante do artigo -- \'e
+aqui que voc\^e apresenta a sua contribui\c{c}\~ao t\'ecnica.
+Escreva com riqueza de detalhes, pois o leitor deve conseguir
+reimplementar o sistema apenas lendo esta se\c{c}\~ao. Comece
+descrevendo o sistema de \textit{closed loop} como um todo e
+depois explique cada abordagem de atua\c{c}\~ao separadamente.
+Inclua uma figura ilustrando o ciclo completo de controle
+(medir $\rightarrow$ comparar $\rightarrow$ atuar $\rightarrow$
+remediar) antes das subse\c{c}\~oes.
+
+\subsection{Abordagem A -- QoS com tc/HTB}
+
+Descreva a hierarquia de filas criada com o HTB (\textit{Hierarchical
+Token Bucket}) em cada interface dos roteadores de transporte. Explique
+o papel de cada classe: a classe raiz limita a banda total do enlace;
+a classe uRLLC recebe prioridade m\'axima (prio\,0) com banda
+garantida; a classe eMBB recebe a prioridade mais baixa (prio\,5)
+e usa a banda restante. Apresente esses par\^ametros em uma tabela
+com as colunas \textit{classe}, \textit{rate}, \textit{ceil} e
+\textit{prio}. Explique como os filtros u32 classificam os pacotes
+para cada classe, usando a marca\c{c}\~ao DSCP ou o n\'umero de
+porta de destino \cite{rfc2474}. Descreva o loop de controle em
+Python: o Scapy monitora o RTT de cada pacote e, quando o limiar
+de 5\,ms \'e ultrapassado, o script executa o comando
+\texttt{tc class change} para elevar dinamicamente a prioridade
+da classe uRLLC. Inclua o c\'odigo Python relevante. Conclua
+apontando a principal limita\c{c}\~ao: a atua\c{c}\~ao \'e
+externa ao switch, o que resulta em tempo de rea\c{c}\~ao superior
+a um segundo.
+
+\subsection{Abordagem B -- SDN com Ryu/OpenFlow}
+
+Explique o conceito de SDN aplicado ao problema: o controlador
+centralizado tem vis\~ao global da rede e pode reprogramar as
+regras de encaminhamento dos switches em tempo real. Descreva
+como o controlador Ryu \cite{ryu} \'e executado externamente
+ao Mininet e se comunica com os switches OVS via protocolo
+OpenFlow\,1.3 \cite{mckeown2008openflow}. Explique a regra de
+fluxo que \'e instalada quando uma viola\c{c}\~ao \'e detectada:
+o \textit{match} casa pacotes com \texttt{tcp\_dst=5556} e DSCP
+EF, e a \textit{action} os redireciona para a fila de menor
+atraso com \texttt{OFPActionSetQueue(0)}. Mostre o trecho de
+c\'odigo Ryu que instala essa regra. Explique a diferena em
+rela\c{c}\~ao \`a Abordagem A: aqui a decis\~ao ainda \'e tomada
+fora do switch, mas a regra \'e instalada diretamente no plano
+de dados via OpenFlow, sem precisar de chamadas de sistema.
+Aponte a limita\c{c}\~ao: o tempo de rea\c{c}\~ao inclui o
+\textit{round-trip} entre o switch e o controlador.
+
+\subsection{Abordagem C -- Plano de Dados Program\'avel com P4/BMv2 + INT}
+
+Explique o diferencial desta abordagem: a decis\~ao de
+prioriza\c{c}\~ao acontece \textit{dentro} do pr\'oprio switch,
+pacote a pacote, sem nenhuma interven\c{c}\~ao externa. Descreva
+o pipeline v1model implementado no switch de software BMv2
+\cite{bmv2,p4tutorials}, com os est\'agios Parser, Ingress,
+\textit{Traffic Manager} e Egress. Inclua uma figura do pipeline.
+Explique que, no est\'agio Egress, o metadado
+\texttt{standard\_metadata.deq\_timedelta} cont\'em o tempo que
+o pacote ficou na fila do switch atual. Quando esse valor
+ultrapassa o limiar $\theta = 5$\,ms, o campo
+\texttt{standard\_metadata.priority} \'e definido como~7 (fila
+de m\'axima prioridade do BMv2), fazendo com que o pacote seja
+servido \`a frente dos demais no pr\'oximo n\'o. Descreva o
+mecanismo MRI (\textit{Multi-Hop Route Inspection}) que implementa
+uma vers\~ao reduzida do INT: cada switch anexa ao pacote um
+cabe\c{c}alho com seu identificador (\texttt{swid}) e a
+profundidade atual da fila (\texttt{qdepth}), permitindo que o
+host destino identifique exatamente qual n\'o causou a congesti\~ao
+\cite{kim2015int,p4int2021spec}. Cite os trabalhos que embasam
+esta abordagem \cite{cugini2019int,paolucci2022latency,
+intassisted2024scheduling}. Conclua discutindo as duas
+limita\c{c}\~oes mais importantes: o \textit{overhead} em bytes
+que o INT adiciona a cada pacote por hop \cite{cabral2025overhead},
+e o fato de o BMv2 ser um switch de refer\^encia n\~ao otimizado
+para desempenho de produ\c{c}\~ao \cite{bmv2} -- os valores
+absolutos de lat\^encia refletem a emula\c{c}\~ao, n\~ao hardware
+real.
+
+% ===================================================================
+\section{Avalia\c{c}\~ao}
+% ===================================================================
+
+A avalia\c{c}\~ao \'e onde voc\^e prova que a sua proposta
+funciona. N\~ao basta apresentar n\'umeros -- voc\^e precisa
+\textit{interpretar} cada resultado e explicar por que ele ocorreu.
+O leitor deve terminar esta se\c{c}\~ao entendendo o que os
+experimentos provaram e quais s\~ao os limites do sistema.
+
+\subsection{Configura\c{c}\~ao Experimental}
+
+Descreva os cen\'arios de teste de forma precisa. Explique que
+cada experimento tem tr\^es fases: os primeiros 30 segundos sem
+carga eMBB (linha de base sem congestionamento), os 60 segundos
+seguintes com o iperf3 saturando o enlace de gargalo, e os
+\'ultimos 30 segundos com a atua\c{c}\~ao do \textit{closed loop}
+ativa. Informe que cada cen\'ario foi repetido um determinado
+n\'umero de vezes (por exemplo, 10 repeti\c{c}\~oes) e que os
+resultados s\~ao apresentados como mediana com desvio absoluto
+mediano (DAM). Indique as quatro condi\c{c}\~oes comparadas:
+sem controle (baseline), Abordagem A (tc/HTB), Abordagem B
+(Ryu/OpenFlow) e Abordagem C (P4+INT).
+
+\subsection{Resultados}
+
+Apresente os resultados em tabelas e gr\'aficos, e comente cada
+um deles em texto corrido. A \textbf{tabela comparativa principal}
+deve conter as m\'etricas TV, P50, P99 e TR para cada abordagem
+-- esta \'e a tabela mais importante do artigo. O \textbf{gr\'afico
+de CDF} (\textit{Cumulative Distribution Function}) mostra a
+distribui\c{c}\~ao acumulada da lat\^encia RTT para as quatro
+condi\c{c}\~oes em uma \'unica figura; inclua uma linha tracejada
+vertical no limiar de 5\,ms para facilitar a leitura. A
+\textbf{s\'erie temporal} mostra a lat\^encia ao longo do tempo
+e destaca o instante exato em que a atua\c{c}\~ao foi disparada,
+evidenciando a redu\c{c}\~ao da lat\^encia ap\'os a interven\c{c}\~ao.
+Para cada figura e tabela, escreva pelo menos um par\'agrafo
+descrevendo o que os dados mostram -- nunca deixe uma figura
+sem explica\c{c}\~ao no texto.
+
+\subsection{Discuss\~ao}
+
+Interprete os resultados de forma cr\'itica. Explique por que a
+Abordagem C (P4+INT) apresenta o menor tempo de rea\c{c}\~ao:
+a decis\~ao \'e tomada no pr\'oprio plano de dados, sem nenhum
+\textit{round-trip} ao controlador, o que elimina a lat\^encia
+de comunica\c{c}\~ao \cite{cugini2019int,paolucci2022latency}.
+Compare as Abordagens A e B: a B \'e mais r\'apida que a A
+porque instala regras diretamente no switch via OpenFlow, mas
+ainda depende da comunica\c{c}\~ao com o controlador externo.
+Discuta as limita\c{c}\~oes dos resultados: o BMv2 \'e um
+switch de software de refer\^encia sem otimiza\c{c}\~ao de
+desempenho \cite{bmv2}, portanto os valores absolutos de lat\^encia
+medem a emula\c{c}\~ao e n\~ao devem ser comparados diretamente
+com hardware real. Discuta tamb\'em o impacto do \textit{overhead}
+do INT: cada hop adiciona bytes ao pacote, o que pode ser
+problem\'atico para fluxos uRLLC com pacotes muito pequenos
+\cite{p4int2021spec,cabral2025overhead}.
+
+% ===================================================================
+\section{Conclus\~oes}
+% ===================================================================
+
+As conclus\~oes encerram o artigo de forma objetiva. N\~ao
+apresente resultados novos aqui -- apenas consolide o que j\'a
+foi dito nas se\c{c}\~oes anteriores. Escreva tr\^es par\'agrafos.
+
+O \textbf{primeiro par\'agrafo} faz a s\'intese do trabalho:
+retome o problema abordado, a proposta apresentada e o principal
+resultado obtido. Seja direto e use n\'umeros concretos dos seus
+experimentos. Exemplo de estrutura: ``Este artigo apresentou um
+sistema de \textit{closed loop} para controle de lat\^encia de
+fluxos uRLLC na rede de transporte 5G, comparando tr\^es
+abordagens de atua\c{c}\~ao. Os resultados demonstraram que a
+abordagem P4+INT reduziu em X\,\% as viola\c{c}\~oes do limiar
+de 5\,ms, com tempo de rea\c{c}\~ao de Y\,ms.''
+
+O \textbf{segundo par\'agrafo} confirma as contribui\c{c}\~oes:
+retome cada item listado na Introdu\c{c}\~ao e afirme que foi
+alcan\c{c}ado, fazendo refer\^encia \`a se\c{c}\~ao ou resultado
+que comprova isso.
+
+O \textbf{terceiro par\'agrafo} aponta os trabalhos futuros:
+direcoes concretas que voc\^e ainda n\~ao fez mas que seriam
+poss\'iveis extens\~oes naturais do trabalho. Exemplos:
+valida\c{c}\~ao em hardware real com switches Intel Tofino,
+extens\~ao para cen\'arios de federa\c{c}\~ao multi-dom\'inio
+usando VXLAN como substrato, ou incorpora\c{c}\~ao de
+classifica\c{c}\~ao de dispositivos com aprendizado de m\'aquina
+diretamente no plano de dados.
+
+% ===================================================================
+\bibliographystyle{sbc}
+\bibliography{referencias}
+
+\end{document}
