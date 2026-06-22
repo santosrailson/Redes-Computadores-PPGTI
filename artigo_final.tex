@@ -10,7 +10,7 @@
 \sloppy
 
 \title{Sistema de Monitoramento e Controle para
-Aplica\c{c}\~oes Sens\'iveis \`a Lat\^encia em Rede de Transporte 5G com P4}
+Aplica\c{c}\~oes Sens\'iveis \`a Lat\^encia em Rede de Transporte 5G com Open vSwitch}
 
 \author{Railson dos Santos Silva\inst{1}}
 
@@ -43,8 +43,7 @@ O resumo \'e a tradu\c{c}\~ao fiel do abstract acima, escrito em
 portugu\^es, com no m\'aximo 10 linhas. Use exatamente a mesma
 estrutura e as mesmas informa\c{c}\~oes -- n\~ao adicione nem
 remova nada. Mantenha os termos t\'ecnicos em ingl\^es quando
-necess\'ario, em it\'alico: \textit{closed loop},
-\textit{in-band telemetry}, \textit{software-defined networking}.
+necess\'ario, em it\'alico: \textit{closed loop}, \textit{software-defined networking}.
 Assim como o abstract, o resumo deve ser escrito por \'ultimo.
 \end{resumo}
 
@@ -79,23 +78,17 @@ os mecanismos cl\'assicos de QoS \cite{rfc3246,rfc2474} s\~ao
 est\'aticos -- eles configuram prioridades fixas e n\~ao reagem
 a varia\c{c}\~oes de carga em tempo real. Diga o que os trabalhos
 mais recentes j\'a tentaram e o que ainda n\~ao foi feito
-\cite{shu2020qosframework,cugini2019int,paolucci2022latency}.
+\cite{shu2020qosframework,latencyaware2025slicing,slicing2023efficient}.
 
 O \textbf{quarto par\'agrafo} apresenta a sua proposta em uma ou
 duas frases: um sistema de monitoramento e controle em malha
 fechada (\textit{closed loop}) que mede a lat\^encia por pacote,
 detecta viola\c{c}\~oes do limiar de 5\,ms e atua automaticamente
-nos roteadores. Mencione as tr\^es abordagens de atua\c{c}\~ao
-comparadas: QoS cl\'assico com tc/HTB \cite{linuxhtb}, SDN com
-OpenFlow sobre Open vSwitch (OVS) \cite{pfaff2015ovs,mckeown2008openflow},
-e plano de dados program\'avel com P4/BMv2 e INT
-\cite{kim2015int,bosshart2014p4}.
-
-\textbf{Nota t\'ecnica:} embora o P4 ofere\c{c}a decis\~ao no plano de dados,
-o switch de refer\^encia BMv2 \cite{bmv2} n\~ao conseguiu entregar
-lat\^encia consistentemente abaixo de 5\,ms quando o tr\'afego uRLLC
-foi gerado com Scapy sobre TCP. Por isso, a implementa\c{c}\~ao final
-adota OVS com QoS/OpenFlow, que atingiu o requisito de lat\^encia.
+nos roteadores. A atua\c{c}\~ao \\'e baseada em OpenFlow sobre
+switches Open vSwitch (OVS) \cite{pfaff2015ovs,mckeown2008openflow},
+utilizando filas de prioridade HTB \cite{linuxhtb} para isolar o
+tr\'afego uRLLC do eMBB. A implementa\c{c}\~ao final adota OVS com
+QoS/OpenFlow, que atingiu o requisito de lat\^encia.
 
 O \textbf{quinto par\'agrafo} lista as contribui\c{c}\~oes do
 trabalho de forma objetiva. Cada item deve ser uma frase que
@@ -137,7 +130,7 @@ banda, atraso e tamanho m\'aximo de fila. Justifique o limiar de
 (\verb|\includegraphics|) com legenda descritiva. Ao final,
 descreva o ambiente de testes: especifica\c{c}\~oes de hardware
 (CPU, mem\'oria RAM), sistema operacional e vers\~oes de todas as
-ferramentas usadas (Mininet, Python, Scapy, Ryu, p4c, BMv2).
+ferramentas usadas (Mininet, Python, Scapy, iperf3, Open vSwitch).
 
 \subsection{Gera\c{c}\~ao de Tr\'afego}
 
@@ -229,35 +222,6 @@ OpenFlow, sem precisar de chamadas de sistema para alterar
 no host de monitoramento, embora a aplica\c{c}\~ao das regras seja
 r\'apida.
 
-\subsection{Abordagem C -- Plano de Dados Program\'avel com P4/BMv2 + INT}
-
-Explique o diferencial desta abordagem: a decis\~ao de
-prioriza\c{c}\~ao acontece \textit{dentro} do pr\'oprio switch,
-pacote a pacote, sem nenhuma interven\c{c}\~ao externa. Descreva
-o pipeline v1model implementado no switch de software BMv2
-\cite{bmv2,p4tutorials}, com os est\'agios Parser, Ingress,
-\textit{Traffic Manager} e Egress. Inclua uma figura do pipeline.
-Explique que, no est\'agio Egress, o metadado
-\texttt{standard\_metadata.deq\_timedelta} cont\'em o tempo que
-o pacote ficou na fila do switch atual. Quando esse valor
-ultrapassa o limiar $\theta = 5$\,ms, o campo
-\texttt{standard\_metadata.priority} \'e definido como~7 (fila
-de m\'axima prioridade do BMv2), fazendo com que o pacote seja
-servido \`a frente dos demais no pr\'oximo n\'o. Descreva o
-mecanismo MRI (\textit{Multi-Hop Route Inspection}) que implementa
-uma vers\~ao reduzida do INT: cada switch anexa ao pacote um
-cabe\c{c}alho com seu identificador (\texttt{swid}) e a
-profundidade atual da fila (\texttt{qdepth}), permitindo que o
-host destino identifique exatamente qual n\'o causou a congesti\~ao
-\cite{kim2015int,p4int2021spec}. Cite os trabalhos que embasam
-esta abordagem \cite{cugini2019int,paolucci2022latency}. Conclua discutindo as duas
-limita\c{c}\~oes mais importantes: o \textit{overhead} em bytes
-que o INT adiciona a cada pacote por hop \cite{cabral2025overhead},
-e o fato de o BMv2 ser um switch de refer\^encia n\~ao otimizado
-para desempenho de produ\c{c}\~ao \cite{bmv2} -- os valores
-absolutos de lat\^encia refletem a emula\c{c}\~ao, n\~ao hardware
-real.
-
 % ===================================================================
 \section{Avalia\c{c}\~ao}
 % ===================================================================
@@ -278,9 +242,8 @@ seguintes com o iperf3 saturando o enlace de gargalo, e os
 ativa. Informe que cada cen\'ario foi repetido um determinado
 n\'umero de vezes (por exemplo, 10 repeti\c{c}\~oes) e que os
 resultados s\~ao apresentados como mediana com desvio absoluto
-mediano (DAM). Indique as quatro condi\c{c}\~oes comparadas:
-sem controle (baseline), Abordagem A (tc/HTB), Abordagem B
-(Ryu/OpenFlow) e Abordagem C (P4+INT).
+mediano (DAM). Indique as condi\c{c}\~oes comparadas:
+sem controle (baseline) e Abordagem B (OVS/OpenFlow com QoS/HTB).
 
 \subsection{Resultados}
 
@@ -289,9 +252,10 @@ um deles em texto corrido. A \textbf{tabela comparativa principal}
 deve conter as m\'etricas TV, P50, P99 e TR para cada abordagem
 -- esta \'e a tabela mais importante do artigo. O \textbf{gr\'afico
 de CDF} (\textit{Cumulative Distribution Function}) mostra a
-distribui\c{c}\~ao acumulada da lat\^encia RTT para as quatro
-condi\c{c}\~oes em uma \'unica figura; inclua uma linha tracejada
-vertical no limiar de 5\,ms para facilitar a leitura. A
+distribui\c{c}\~ao acumulada da lat\^encia one-way para as
+condi\c{c}\~oes baseline e OVS/OpenFlow em uma \'unica figura;
+inclua uma linha tracejada vertical no limiar de 5\,ms para
+facilitar a leitura. A
 \textbf{s\'erie temporal} mostra a lat\^encia ao longo do tempo
 e destaca o instante exato em que a atua\c{c}\~ao foi disparada,
 evidenciando a redu\c{c}\~ao da lat\^encia ap\'os a interven\c{c}\~ao.
@@ -302,21 +266,17 @@ sem explica\c{c}\~ao no texto.
 \subsection{Discuss\~ao}
 
 Interprete os resultados de forma cr\'itica. Explique por que a
-Abordagem C (P4+INT) apresenta o menor tempo de rea\c{c}\~ao:
-a decis\~ao \'e tomada no pr\'oprio plano de dados, sem nenhum
-\textit{round-trip} ao controlador, o que elimina a lat\^encia
-de comunica\c{c}\~ao \cite{cugini2019int,paolucci2022latency}.
-Compare as Abordagens A e B: a B \'e mais r\'apida que a A
-porque instala regras diretamente no switch via OpenFlow, mas
-ainda depende da comunica\c{c}\~ao com o controlador externo.
-Discuta as limita\c{c}\~oes dos resultados: o BMv2 \'e um
-switch de software de refer\^encia sem otimiza\c{c}\~ao de
-desempenho \cite{bmv2}, portanto os valores absolutos de lat\^encia
-medem a emula\c{c}\~ao e n\~ao devem ser comparados diretamente
-com hardware real. Discuta tamb\'em o impacto do \textit{overhead}
-do INT: cada hop adiciona bytes ao pacote, o que pode ser
-problem\'atico para fluxos uRLLC com pacotes muito pequenos
-\cite{p4int2021spec,cabral2025overhead}.
+Abordagem B (OVS/OpenFlow) reduz as viola\c{c}\~oes de lat\^encia:
+as regras de fluxo s\~ao instaladas diretamente nos switches via
+OpenFlow, e as filas HTB garantem prioridade m\'axima ao tr\'afego
+uRLLC \cite{pfaff2015ovs,linuxhtb}. Compare com a baseline (sem
+controle): sem a fila de alta prioridade, o tr\'afego eMBB
+satura o enlace e aumenta a lat\^encia do uRLLC. Discuta as
+limita\c{c}\~oes dos resultados: o OVS executa em software, portanto
+os valores absolutos de lat\^encia medem a emula\c{c}\~ao e n\~ao
+devem ser comparados diretamente com hardware de produ\c{c}\~ao.
+Aponte tamb\'em que o gerador uRLLC utiliza Scapy sobre TCP,
+o que introduz overhead de processamento nos hosts terminais.
 
 % ===================================================================
 \section{Conclus\~oes}
@@ -331,10 +291,11 @@ retome o problema abordado, a proposta apresentada e o principal
 resultado obtido. Seja direto e use n\'umeros concretos dos seus
 experimentos. Exemplo de estrutura: ``Este artigo apresentou um
 sistema de \textit{closed loop} para controle de lat\^encia de
-fluxos uRLLC na rede de transporte 5G, comparando tr\^es
-abordagens de atua\c{c}\~ao. Os resultados demonstraram que a
-abordagem P4+INT reduziu em X\,\% as viola\c{c}\~oes do limiar
-de 5\,ms, com tempo de rea\c{c}\~ao de Y\,ms.''
+fluxos uRLLC na rede de transporte 5G, utilizando Open vSwitch
+com QoS/OpenFlow. Os resultados demonstraram que a abordagem
+reduziu as viola\c{c}\~oes do limiar de 5\,ms, mantendo a
+lat\^encia m\'edia abaixo de 2,5\,ms mesmo na presen\c{c}a de
+tr\'afego eMBB.''
 
 O \textbf{segundo par\'agrafo} confirma as contribui\c{c}\~oes:
 retome cada item listado na Introdu\c{c}\~ao e afirme que foi
