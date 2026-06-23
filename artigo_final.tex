@@ -70,23 +70,23 @@ rede de transporte da operadora, os fluxos uRLLC compartilham as
 mesmas filas dos roteadores com o tr\'afego eMBB, que \'e
 volum\'atico. Quando o eMBB satura o enlace, a fila enche e a
 lat\^encia do uRLLC ultrapassa o limiar aceit\'avel
-\cite{latencyaware2025slicing,slicing2023efficient}. Explique por
+\cite{grings2022slicing,lima2022admissao,nahum2024urllc,mauricio2024urllc}. Explique por
 que isso \'e cr\'itico.
 
 O \textbf{terceiro par\'agrafo} aponta a lacuna na literatura:
-os mecanismos cl\'assicos de QoS \cite{rfc3246,rfc2474} s\~ao
+os mecanismos cl\'assicos de QoS \cite{rfc3246,rfc2474,araujo2013qos,pacheco2016caminhos} s\~ao
 est\'aticos -- eles configuram prioridades fixas e n\~ao reagem
 a varia\c{c}\~oes de carga em tempo real. Diga o que os trabalhos
 mais recentes j\'a tentaram e o que ainda n\~ao foi feito
-\cite{shu2020qosframework,latencyaware2025slicing,slicing2023efficient}.
+\cite{chaves2016sdn,grings2022slicing}.
 
 O \textbf{quarto par\'agrafo} apresenta a sua proposta em uma ou
 duas frases: um sistema de monitoramento e controle em malha
 fechada (\textit{closed loop}) que mede a lat\^encia por pacote,
 detecta viola\c{c}\~oes do limiar de 5\,ms e atua automaticamente
 nos roteadores. A atua\c{c}\~ao \\'e baseada em OpenFlow sobre
-switches Open vSwitch (OVS) \cite{pfaff2015ovs,mckeown2008openflow},
-utilizando filas de prioridade HTB \cite{linuxhtb} para isolar o
+switches Open vSwitch (OVS) \cite{chaves2016sdn,chaves2016ofs13,pfaff2015ovs,mckeown2008openflow},
+utilizando filas de prioridade HTB \cite{olegario2024qos5g,linuxhtb} para isolar o
 tr\'afego uRLLC do eMBB. A implementa\c{c}\~ao final adota OVS com
 QoS/OpenFlow, que atingiu o requisito de lat\^encia.
 
@@ -119,8 +119,8 @@ apenas diga como voc\^e os utilizou.
 
 Descreva a topologia de rede criada no Mininet \cite{mininet}.
 Os quatro n\'os de transporte foram implementados como switches
-Open vSwitch (OVS) \cite{pfaff2015ovs}, configurados via OpenFlow 1.3
-\cite{mckeown2008openflow} para encaminhamento L2 e prioriza\c{c}\~ao de
+Open vSwitch (OVS) \cite{chaves2016sdn,pfaff2015ovs}, configurados via OpenFlow 1.3
+\cite{chaves2016ofs13,mckeown2008openflow} para encaminhamento L2 e prioriza\c{c}\~ao de
 tr\'afego. Explique quantos hosts existem, quantos roteadores, como est\~ao
 conectados e qual \'e o papel de cada n\'o. Especifique os
 par\^ametros de cada enlace configurados com TCLink: largura de
@@ -137,7 +137,7 @@ ferramentas usadas (Mininet, Python, Scapy, iperf3, Open vSwitch).
 Explique como cada tipo de tr\'afego foi gerado. Para o tr\'afego
 uRLLC, descreva o script em Scapy \cite{scapy}: o tipo de pacote
 (TCP SYN), a marca\c{c}\~ao DSCP EF com \texttt{tos=0xB8}
-\cite{rfc3246}, a porta de destino e a taxa de envio. Apresente
+\cite{rfc3246,araujo2013qos}, a porta de destino e a taxa de envio. Apresente
 a f\'ormula de c\'alculo da lat\^encia RTT por pacote:
 
 \begin{equation}
@@ -147,8 +147,8 @@ a f\'ormula de c\'alculo da lat\^encia RTT por pacote:
 
 \noindent onde $t_{\text{tx}}$ \'e o instante de envio e
 $t_{\text{rx}}$ \'e o instante de recep\c{c}\~ao registrados
-pelo Scapy. Para o tr\'afego eMBB, descreva o uso do iperf3
-\cite{iperf} em modo UDP (ou TCP, quando indicado), com taxa
+pelo Scapy. Para o tr\'afego eMBB, descreva o uso do iperf3 \cite{iperf}
+em modo UDP (ou TCP, quando indicado), com taxa
 suficiente para saturar o enlace de gargalo e for\c{c}ar
 viola\c{c}\~oes de lat\^encia.
 
@@ -190,7 +190,7 @@ e usa a banda restante. Apresente esses par\^ametros em uma tabela
 com as colunas \textit{classe}, \textit{rate}, \textit{ceil} e
 \textit{prio}. Explique como os filtros u32 classificam os pacotes
 para cada classe, usando a marca\c{c}\~ao DSCP ou o n\'umero de
-porta de destino \cite{rfc2474}. Descreva o loop de controle em
+porta de destino \cite{rfc2474,pacheco2016caminhos}. Descreva o loop de controle em
 Python: o Scapy monitora o RTT de cada pacote e, quando o limiar
 de 5\,ms \'e ultrapassado, o script executa o comando
 \texttt{tc class change} para elevar dinamicamente a prioridade
@@ -204,15 +204,15 @@ a um segundo.
 Explique o conceito de SDN aplicado ao problema: o controlador
 centralizado tem vis\~ao global da rede e pode reprogramar as
 regras de encaminhamento dos switches em tempo real. Neste
-trabalho, as regras OpenFlow\,1.3 \cite{mckeown2008openflow} s\~ao
+trabalho, as regras OpenFlow\,1.3 \cite{chaves2016ofs13,mckeown2008openflow} s\~ao
 instaladas diretamente nos switches Open vSwitch (OVS)
-\cite{pfaff2015ovs} do Mininet, sem a necessidade de um controlador
+\cite{chaves2016sdn,pfaff2015ovs} do Mininet, sem a necessidade de um controlador
 Ryu externo. Explique a regra de fluxo que \'e instalada quando
 uma viola\c{c}\~ao \'e detectada: o \textit{match} casa pacotes
 com \texttt{tcp\_dst=5000} e DSCP EF, e a \textit{action} os
 redireciona para a fila de alta prioridade com
 \texttt{set\_queue:1}. Descreva tamb\'em a hierarquia de filas
-HTB \cite{linuxhtb} configurada em cada porta OVS, com duas filas:
+HTB \cite{olegario2024qos5g,linuxhtb} configurada em cada porta OVS, com duas filas:
 fila 0 (eMBB/default) e fila 1 (uRLLC). Mostre o trecho de
 c\'odigo Python que instala as regras via \texttt{ovs-ofctl}.
 Explique a diferen\c{c}a em rela\c{c}\~ao \`a Abordagem A: aqui
@@ -269,7 +269,7 @@ Interprete os resultados de forma cr\'itica. Explique por que a
 Abordagem B (OVS/OpenFlow) reduz as viola\c{c}\~oes de lat\^encia:
 as regras de fluxo s\~ao instaladas diretamente nos switches via
 OpenFlow, e as filas HTB garantem prioridade m\'axima ao tr\'afego
-uRLLC \cite{pfaff2015ovs,linuxhtb}. Compare com a baseline (sem
+uRLLC \cite{chaves2016sdn,olegario2024qos5g,pfaff2015ovs,linuxhtb}. Compare com a baseline (sem
 controle): sem a fila de alta prioridade, o tr\'afego eMBB
 satura o enlace e aumenta a lat\^encia do uRLLC. Discuta as
 limita\c{c}\~oes dos resultados: o OVS executa em software, portanto
