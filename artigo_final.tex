@@ -172,10 +172,19 @@
 		\section{Proposta}
 		% ===================================================================
 		
-		A proposta desse projeto é desenvolver um sistema para prevenir incêndios. Desenvolvido em redes 5G, o sistema propõe utilizar sensores e câmeras para mitigar e prevenir possível incêndios usando tecnologia de comunicação ultra confiável e de banda larga. 
+		A proposta desse projeto é desenvolver um sistema para prevenir incêndios. Desenvolvido em redes 5G, o sistema propõe utilizar sensores e câmeras para mitigar e prevenir possíveis incêndios usando tecnologia de comunicação ultra confiável e de banda larga. 
 
         Os ambientes que irão ser monitorados na simulação, são a biblioteca, reitoria e laboratórios. O sensores aplicados vão identificar a temperatura do ambiente, umidade, fumaça, chamas e gás. A câmera irá ativar o monitoramento assim que detectar algumas anomalias identificadas pelos sensores e que possam está relacionados a possíveis princípios de incêndios.
 
+        Para os sensores a tecnologia usada dentro do contexto das redes 5G, garantindo o mínimo de tempo possível de entrega para uma central de monitoramento é o uRLLC (Comunicação Ultra Confiável de Baixa Latência), com essa aplicação a comunicação irá chegar com valor de tempo igual ou abaixo de 5 milissegundos, dentro do contexto que o projeto é proposto. O monitoramento com as câmeras será utilizado também tecnologia de redes 5G, o eMBB (Comunicação Massiva entre Dispositivos), com essa aplicação será possível enviar dados com uma carga maior de informação - imagens - que poderão gerar mais valor na identificação e solução dos elementos para prevenir incêndios no local.
+
+        A comunicação dos dispositivos de cada local estão conectados a quatro switchs em linha com essa arquitetura simulada usando o Mininet que emula a rede 5G. Um switch fica responsável por conectar os servidores de monitoramento de sensores e de câmeras, cada um processando dados de forma que não sobrecarregue ou gere perdas de dados na comunicação.
+
+        O tráfego da rede uRLLC que passam as mensagens TCP pela porta 5000 e eMBB onde passa o fluxo relacionado a vídeo é gerado pelo o iperf3 através das portas 5001-5003, são simulações onde atesta os resultado e objetivos alcançados da proposta do projeto. Um mecânismo importante nessa construção é o QoS (Qualidade de Serviço), o qual cria filas, onde a fila 0 representa o tráfego uRLLC e a fila 1 representa o eMBB,  e essas regras são implementadas graças ao OpenFlow dentro dos switchs OVS. E como funciona? a fila uRLLC tem banda reservada e o eMBB a banda é ajustável pois não tem prioridade como a anterior.
+
+        Para assegurar o monitoramento é utilizado o closed loop, é com ele que o ciclo segue a seguinte sequência: a central observa cada mensagem uRLLC e mede a latência; o controlador toma a decisão de medir o limite de 5 ms, e se esse limite ulltrapassar o máximo, reduz a taxa máxima das filas eMBB de 20 para 2 Mbit/s aliviando a rede para o uRLCC. Todo esse processo é repetido e verificado graças ao closed loop para manter uma rede estável principalemnte para os sensores.
+
+        No caso do tráfego eMBB ser limitado ou ajustado para priorizar o tráfego uRLLC, é para o tráfego das câmeras não ser interrompido e manter a rede completamente ativa.
         
 		
 		\subsection{Abordagem A -- QoS com tc/HTB}
