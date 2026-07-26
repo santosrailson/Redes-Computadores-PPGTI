@@ -134,6 +134,8 @@
 
         Nessa simulação, a topologia é constituída por três ambientes que são monitorados por sensores e câmeras. No caso dos sensores, é utilizado o uRLLC para priorizar a comunicação com baixa latência até o servidor central e, para o monitoramento com as câmeras, foi utilizado o eMBB para lidar com um tráfego maior, já que os dados processados são de vídeo. Com a biblioteca Scapy \cite{scapy}, foi possível simular os tráfegos em \textit{Transmission Control Protocol} (TCP) para as comunicações uRLLC e em \textit{User Datagram Protocol} (UDP) para o eMBB, que também usou o iperf3 \cite{iperf} para gerar uma carga maior de dados e validar os testes. Para medir a latência e poder monitorar, foi utilizado o seguinte cálculo: (tempo\_recebimento - tempo\_envio) * 1000. Outro método importante no projeto é o uso do controlador \textit{closed loop}, com ele é possível monitorar o estado das conexões e suas respectivas latências de forma contínua para tomar a decisão de quando deve priorizar cada tráfego. Para avaliar os resultados, foram usadas as bibliotecas Python: NumPy para trabalhar com dados estatísticos e Matplotlib para gerar gráficos.
 
+		A arquitetura geral da rede emulada é apresentada na Figura~\ref{fig:arquitetura}.
+
 		\begin{figure}[ht]
 			\centering
 			\includegraphics[width=\linewidth]{figuras/arquitetura_closed_loop.png}
@@ -231,7 +233,7 @@
 
         \subsection{Resultados e Discussões}
         
-        O primeiro cenário testado foi o isolado. Nele, apenas o tráfego uRLLC está ativo, sem concorrer com o eMBB; somente os sensores transmitem dados para a central. Com isso, a latência se mostrou abaixo de 5 ms em todos os casos. A tabela de conformidade e a CDF apresentam melhor os resultados do cenário isolado.
+        O primeiro cenário testado foi o isolado. Nele, apenas o tráfego uRLLC está ativo, sem concorrer com o eMBB; somente os sensores transmitem dados para a central. Com isso, a latência se mostrou abaixo de 5 ms em todos os casos. Os resultados agregados de conformidade do tráfego uRLLC são apresentados na Tabela~\ref{tab:conformidade-urllc}.
 
 		\begin{table}[ht]
 			\centering
@@ -252,6 +254,8 @@
 			}
 		\end{table}
 
+		A Figura~\ref{fig:metricas-urllc} detalha visualmente as perdas, os \textit{timeouts} e a não conformidade efetiva por cenário.
+
 		\begin{figure}[ht]
 			\centering
 			\includegraphics[width=\linewidth]{figuras/metricas_urllc.png}
@@ -260,6 +264,8 @@
 		\end{figure}
 
 		A Figura~\ref{fig:metricas-urllc} e a Tabela~\ref{tab:conformidade-urllc} mostram que a análise deve considerar todas as tentativas, incluindo perdas e \textit{timeouts}. Com essa métrica, o \textit{closed loop} melhora o resultado em relação aos cenários concorrentes, mas ainda não garante o limite de 5 ms.
+
+		A distribuição acumulada da latência uRLLC nos quatro cenários é apresentada na Figura~\ref{fig:cdf-urllc}.
 
 		\begin{figure}[ht]
 			\centering
@@ -270,7 +276,7 @@
 
 		Na Figura~\ref{fig:cdf-urllc}, a linha tracejada na vertical de cor vermelha representa o limite de 5 ms. A comparação deve destacar a posição de cada curva em relação a esse limite e esclarecer que a CDF considera apenas amostras recebidas, não substituindo a métrica de não conformidade efetiva.
 
-        No cenário sem QoS, o tráfego fica sem classificação de prioridade, afetando o desempenho da rede. Como é possível observar na figura de conformidade de tráfego, a não conformidade foi de 45,55\%, com p95 de 1455,314 ms. No cenário com QoS estático, o tráfego uRLLC é colocado em uma fila de prioridade durante toda a execução; nesse caso, a configuração da rede não é alterada independentemente de suas condições. Ainda considerando a análise estatística, o p95 apresentou um valor alto, de 804,040 ms, devido a perdas e \textit{timeouts} na comunicação. Houve uma melhora, mas não suficiente para garantir o limite de 5 ms.
+        No cenário sem QoS, o tráfego fica sem classificação de prioridade, afetando o desempenho da rede. Como é possível observar na figura de conformidade de tráfego, a não conformidade foi de 45,55\%, com p95 de 1455,314 ms. No cenário com QoS estático, o tráfego uRLLC é colocado em uma fila de prioridade durante toda a execução; nesse caso, a configuração da rede não é alterada independentemente de suas condições. Ainda considerando a análise estatística, o p95 apresentou um valor alto, de 804,040 ms, devido a perdas e \textit{timeouts} na comunicação. Houve uma melhora, mas não suficiente para garantir o limite de 5 ms. As estatísticas de latência dos quatro cenários são apresentadas na Tabela~\ref{tab:latencia-urllc}.
 
 		\begin{table}[ht]
 			\centering
@@ -293,7 +299,7 @@
 
 		A Tabela~\ref{tab:latencia-urllc} permite separar a melhoria da distribuição de latência do efeito das perdas. O QoS estático reduz os percentis em relação ao cenário sem QoS, mas o percentual de não conformidade efetiva permanece elevado porque os \textit{timeouts} também são contabilizados.
 
-        O último cenário dos testes foi o \textit{closed loop}, que é o foco da proposta do projeto. Aqui, o controlador monitora constantemente a latência uRLLC. Após duas violações consecutivas do limite de 5 ms, a taxa máxima da fila eMBB é reduzida de 20 para 2 Mbit/s. Quando são obtidas três medições seguidas abaixo ou iguais a 5 ms, o controlador restaura a taxa do eMBB. A não conformidade efetiva foi reduzida para 31,33\%. O p95 apresentou valor de 3,233 ms entre os dados recebidos. O \textit{closed loop} trouxe melhorias, mas apresentou 29,64\% de perdas ou \textit{timeouts}. A vazão do eMBB caiu para 0,932 Mbit/s, com perda de 92,27\% nesses testes. O mecanismo protegeu o tráfego uRLLC, mas com o custo de desfavorecer o serviço eMBB.
+        O último cenário dos testes foi o \textit{closed loop}, que é o foco da proposta do projeto. Aqui, o controlador monitora constantemente a latência uRLLC. Após duas violações consecutivas do limite de 5 ms, a taxa máxima da fila eMBB é reduzida de 20 para 2 Mbit/s. Quando são obtidas três medições seguidas abaixo ou iguais a 5 ms, o controlador restaura a taxa do eMBB. A não conformidade efetiva foi reduzida para 31,33\%. O p95 apresentou valor de 3,233 ms entre os dados recebidos. O \textit{closed loop} trouxe melhorias, mas apresentou 29,64\% de perdas ou \textit{timeouts}. A vazão do eMBB caiu para 0,932 Mbit/s, com perda de 92,27\% nesses testes. O mecanismo protegeu o tráfego uRLLC, mas com o custo de desfavorecer o serviço eMBB. A comparação da vazão recebida e das perdas do tráfego eMBB é apresentada na Tabela~\ref{tab:vazao-embb} e na Figura~\ref{fig:vazao-embb}.
 
 		\begin{table}[ht]
 			\centering
@@ -317,6 +323,8 @@
 			\caption{Vazão eMBB recebida por cenário, com intervalo de confiança de 95\% entre as repetições.}
 			\label{fig:vazao-embb}
 		\end{figure}
+
+		A Tabela~\ref{tab:vazao-embb} e a Figura~\ref{fig:vazao-embb} evidenciam que o \textit{closed loop} protege o tráfego uRLLC à custa de uma redução acentuada da vazão eMBB, confirmando o compromisso entre latência e vazão.
 
 
 		\FloatBarrier
