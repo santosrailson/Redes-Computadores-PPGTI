@@ -15,12 +15,12 @@
 		\par\noindent\textcolor{red}{\textit{Sugestão de comentário:} #1}\par
 	}
 	
-	\title{O Emprego de Dispositivos em uma Rede 5G com Closed Loop e Tráfego uRLLC/eMBB para a Prevenção de Incêndios no Campus da UFPB}
+	\title{O Emprego de Dispositivos em uma Rede 5G com \textit{closed loop} e Tráfego uRLLC/eMBB para a Prevenção de Incêndios no Campus da UFPB}
 	
 	\author{Railson dos Santos Silva\inst{1}}
 	
 	\address{
-		Programa de Pós Graduação em Tecnologia da Informação (PPGTI) \\
+		Programa de Pós-Graduação em Tecnologia da Informação (PPGTI) \\
 		Instituto Federal da Para\'iba (IFPB)\\
 		Jo\~ao Pessoa -- PB -- Brasil
 		\email{santos.railson@academico.ifpb.edu.br}
@@ -55,6 +55,16 @@
 		% ===================================================================
 		\section{Introdu\c{c}\~ao}
 		% ===================================================================
+
+		As redes móveis de quinta geração (5G) permitem atender aplicações com diferentes requisitos de comunicação. Neste trabalho, são consideradas as aplicações de comunicação ultraconfiável e de baixa latência (uRLLC) para os sensores de incêndio e de banda larga móvel aprimorada (eMBB) para as câmeras de monitoramento \cite{3gpp23501,itu2017m2410}. O cenário adotado representa um campus da UFPB, no qual sensores e câmeras enviam informações para uma Central de Monitoramento.
+
+		A aplicação uRLLC é usada para transportar alertas dos sensores com o menor tempo possível, enquanto o eMBB é empregado para o envio de um volume maior de dados associado às imagens das câmeras. Como os dois tipos de tráfego compartilham a mesma rede de transporte, a carga gerada pelo eMBB pode afetar a latência e a entrega das mensagens uRLLC quando não existe classificação de prioridade.
+
+		Para tratar esse problema, o projeto implementa um mecanismo de QoS com filas em \textit{switches} Open vSwitch (OVS), utilizando OpenFlow para classificar os fluxos \cite{mckeown2008openflow,pfaff2015ovs,olegario2024qos5g}. A proposta acrescenta um controlador \textit{closed loop} que observa continuamente a latência das mensagens uRLLC e ajusta a taxa do tráfego eMBB quando o limite de 5 ms é ultrapassado. A atuação mantém o tráfego das câmeras ativo, mas reduz temporariamente sua taxa para proteger a comunicação dos sensores.
+
+		A avaliação foi realizada em uma topologia emulada com Mininet dentro do Docker, composta por três locais, quatro \textit{switches} e uma Central de Monitoramento \cite{mininet}. Foram comparados quatro cenários, com cinco repetições de 60 segundos cada: isolado, sem QoS, QoS estático e \textit{closed loop}. Os resultados mostraram não conformidade efetiva de 0,08\% no cenário isolado, 45,55\% sem QoS, 50,39\% com QoS estático e 31,33\% com \textit{closed loop}. Neste último cenário, o p95 foi de 3,233 ms entre os pacotes recebidos, mas ocorreram perdas e \textit{timeouts}, além de uma redução da vazão eMBB para 0,932 Mbit/s.
+
+		Este trabalho, portanto, implementa e avalia uma estratégia de controle reativo para a coexistência de tráfegos uRLLC e eMBB em uma rede 5G emulada. O restante do artigo está organizado da seguinte forma: a Seção~2 apresenta a metodologia; a Seção~3 descreve a proposta; a Seção~4 apresenta a avaliação; e a Seção~5 reúne as conclusões.
 		
 		% A introdu\c{c}\~ao tem como objetivo convencer o leitor de que o
 		% problema que voc\^e estudou \'e importante e que a sua solu\c{c}\~ao
@@ -120,14 +130,14 @@
 		% N\~ao explique o que \'e o Mininet ou o Scapy em profundidade --
 		% apenas diga como voc\^e os utilizou.
 		
-	    Nesse trabalho para desenvolver o sistema de monitoramento para prevenção de incêndios dentro do cenário de um campus da UFPB, foi escolhida a arquitetura de redes 5G e testar em um ambiente emulado. O macOS foi é sistema operacional e para simular o ambiente foi utilizado o Mininet no Docker \cite{mininet} para facilitar o desenvolvimento e portabilidade do projeto. O sistema utilizado no contêiner foi o Ubuntu 22.04, possibilitando a emulação e construção de quatro switches configurados usando o OpenVSwitch \cite{pfaff2015ovs}.
+	    Nesse trabalho para desenvolver o sistema de monitoramento para prevenção de incêndios dentro do cenário de um campus da UFPB, foi escolhida a arquitetura de redes 5G e testar em um ambiente emulado. O macOS foi o sistema operacional e para simular o ambiente foi utilizado o Mininet no Docker \cite{mininet} para facilitar o desenvolvimento e portabilidade do projeto. O sistema utilizado no contêiner foi o Ubuntu 22.04, possibilitando a emulação e construção de quatro \textit{switches} configurados usando o Open vSwitch \cite{pfaff2015ovs}.
 
-        Nessa simulação, a topologia é constituída por três ambientes que são monitorados por sensores e câmeras. No caso dos sensores, é utilizado o uRLLC para priorizar a comunicação com baixa latência até o servidor central e, para o monitoramento com as câmeras, foi utilizado o eMBB, para lidar com um tráfego maior já que os dados processados são de vídeo. Com a biblioteca scapy \cite{scapy} foi possível a simulação dos tráfegos em TCP para as comunicações uRLLC, e UDP para eMBB que usou também o iperf3 \cite{iperf}, responsável para gerar uma carga maior de dados, validando os testes. Para medir a latência e poder monitorar, o seguinte cálculo utilizado foi: (tempo\_recebimento - tempo\_envio) * 1000. Outro método importante no projeto é o uso do controlador closed loop, com ele é possível monitorar o estado das conexões e suas respectivas latências de forma contínua para tomar a decisão de quando deve priorizar cada tráfego. Para avaliar os resultados foram usadas as bibliotecas python: numpy para trabalhar com dados estatísticos e; matplotlib para gerar gráficos.
+        Nessa simulação, a topologia é constituída por três ambientes que são monitorados por sensores e câmeras. No caso dos sensores, é utilizado o uRLLC para priorizar a comunicação com baixa latência até o servidor central e, para o monitoramento com as câmeras, foi utilizado o eMBB para lidar com um tráfego maior, já que os dados processados são de vídeo. Com a biblioteca Scapy \cite{scapy}, foi possível simular os tráfegos em \textit{Transmission Control Protocol} (TCP) para as comunicações uRLLC e em \textit{User Datagram Protocol} (UDP) para o eMBB, que também usou o iperf3 \cite{iperf} para gerar uma carga maior de dados e validar os testes. Para medir a latência e poder monitorar, foi utilizado o seguinte cálculo: (tempo\_recebimento - tempo\_envio) * 1000. Outro método importante no projeto é o uso do controlador \textit{closed loop}, com ele é possível monitorar o estado das conexões e suas respectivas latências de forma contínua para tomar a decisão de quando deve priorizar cada tráfego. Para avaliar os resultados, foram usadas as bibliotecas Python: NumPy para trabalhar com dados estatísticos e Matplotlib para gerar gráficos.
 
 		\begin{figure}[ht]
 			\centering
 			\includegraphics[width=\linewidth]{figuras/arquitetura_closed_loop.png}
-			\caption{Arquitetura da rede 5G emulada, com três locais monitorados, quatro switches Open vSwitch e a Central de Monitoramento.}
+			\caption{Arquitetura da rede 5G emulada, com três locais monitorados, quatro \textit{switches} Open vSwitch e a Central de Monitoramento.}
 			\label{fig:arquitetura}
 		\end{figure}
 
@@ -187,27 +197,25 @@
 		\section{Proposta}
 		% ===================================================================
 		
-		A proposta desse projeto é desenvolver um sistema para prevenir incêndios. Desenvolvido em redes 5G, o sistema propõe utilizar sensores e câmeras para mitigar e prevenir possíveis incêndios usando tecnologia de comunicação ultra confiável e de banda larga. 
+		A proposta desse projeto é desenvolver um sistema para prevenir incêndios. Desenvolvido em redes 5G, o sistema propõe utilizar sensores e câmeras para mitigar e prevenir possíveis incêndios usando tecnologia de comunicação ultraconfiável e de banda larga.
 
         \subsection{Ambientes de Monitoramento}
         
-        Os ambientes que irão ser monitorados na simulação, são a biblioteca, reitoria e laboratórios. O sensores aplicados vão identificar a temperatura do ambiente, umidade, fumaça, chamas e gás. A câmera irá ativar o monitoramento assim que detectar algumas anomalias identificadas pelos sensores e que possam está relacionados a possíveis princípios de incêndios.
+        Os ambientes que irão ser monitorados na simulação são a biblioteca, reitoria e laboratórios. Os sensores aplicados vão identificar a temperatura do ambiente, umidade, fumaça, chamas e gás. A câmera irá ativar o monitoramento assim que detectar algumas anomalias identificadas pelos sensores e que possam estar relacionadas a possíveis princípios de incêndio.
 
-        Para os sensores a tecnologia usada dentro do contexto das redes 5G, garantindo o mínimo de tempo possível de entrega para uma central de monitoramento é o uRLLC (Comunicação Ultra Confiável de Baixa Latência) \cite{3gpp23501,itu2017m2410}, com essa aplicação a comunicação irá chegar com valor de tempo igual ou abaixo de 5 milissegundos, dentro do contexto que o projeto é proposto. O monitoramento com as câmeras será utilizado também tecnologia de redes 5G, o eMBB (Comunicação Massiva entre Dispositivos), com essa aplicação será possível enviar dados com uma carga maior de informação - imagens - que poderão gerar mais valor na identificação e solução dos elementos para prevenir incêndios no local.
+        Para os sensores, a tecnologia usada dentro do contexto das redes 5G, garantindo o mínimo de tempo possível de entrega para uma Central de Monitoramento, é o uRLLC (comunicação ultraconfiável e de baixa latência) \cite{3gpp23501,itu2017m2410}. Com essa aplicação, a comunicação deverá chegar com valor igual ou inferior a 5 milissegundos, dentro do contexto em que o projeto é proposto. O monitoramento com as câmeras também utilizará uma tecnologia de redes 5G, o eMBB (banda larga móvel aprimorada). Com essa aplicação, será possível enviar dados com uma carga maior de informação -- imagens -- que poderão gerar mais valor na identificação e solução dos elementos para prevenir incêndios no local.
 
-        A comunicação dos dispositivos de cada local estão conectados a quatro switchs em linha com essa arquitetura simulada usando o Mininet que emula a rede 5G. Um switch fica responsável por conectar os servidores de monitoramento de sensores e de câmeras, cada um processando dados de forma que não sobrecarregue ou gere perdas de dados na comunicação.
+        Os dispositivos de cada local estão conectados a quatro \textit{switches} em linha, em uma arquitetura simulada usando o Mininet, que emula a rede 5G. Um \textit{switch} fica responsável por conectar os servidores de monitoramento de sensores e de câmeras, cada um processando dados de forma que não sobrecarregue ou gere perdas de dados na comunicação.
         
         \subsection{Tráfegos uRLLC e eMBB}
         
-        O tráfego da rede uRLLC que passam as mensagens TCP pela porta 5000 e eMBB onde passa o fluxo relacionado a vídeo é gerado pelo o iperf3 através das portas 5001-5003, são simulações onde atesta os resultado e objetivos alcançados da proposta do projeto. Um mecânismo importante nessa construção é o QoS (Qualidade de Serviço) adaptativo \cite{olegario2024qos5g}, o qual cria filas, onde a fila 0 representa o tráfego uRLLC e a fila 1 representa o eMBB,  e essas regras são implementadas graças ao OpenFlow \cite{mckeown2008openflow} dentro dos switchs OVS \cite{pfaff2015ovs}. E como funciona? a fila uRLLC tem banda reservada e o eMBB a banda é ajustável pois não tem prioridade como a anterior.
+        As mensagens da rede uRLLC passam pela porta TCP 5000, enquanto o fluxo relacionado ao vídeo eMBB é gerado pelo iperf3 através das portas 5001--5003. Essas configurações são utilizadas para validar os resultados e os objetivos da proposta. Um mecanismo importante nessa construção é a Qualidade de Serviço (QoS) adaptativa \cite{olegario2024qos5g}, que cria filas: a fila 1 representa o tráfego uRLLC e a fila 0 representa o eMBB. Essas regras são implementadas por meio do OpenFlow \cite{mckeown2008openflow} nos \textit{switches} OVS \cite{pfaff2015ovs}. A fila uRLLC tem banda reservada, enquanto a banda do eMBB é ajustável, pois esse tráfego não possui a mesma prioridade.
 
-		\sugestao{Conferir a numeração das filas antes da submissão: na implementação executada, a fila 1 foi reservada ao uRLLC e a fila 0 ao eMBB. A observação deve ser usada para revisar a descrição, caso o mapeamento apresentado no parágrafo não seja intencional.}
-
-        \subsection{Closed Loop e Ajustes de Latência}
+        \subsection{\textit{Closed loop} e Ajustes de Latência}
         
-        Para assegurar o monitoramento é utilizado o closed loop \cite{simao2025mecanismo}, é com ele que o ciclo segue a seguinte sequência: a central observa cada mensagem uRLLC e mede a latência; o controlador toma a decisão de medir o limite de 5 ms, e se esse limite ulltrapassar o máximo, reduz a taxa máxima das filas eMBB de 20 para 2 Mbit/s \cite{linuxhtb} aliviando a rede para o uRLCC. Todo esse processo é repetido e verificado graças ao closed loop para manter uma rede estável principalemnte para os sensores.
+        Para assegurar o monitoramento, é utilizado o \textit{closed loop} \cite{simao2025mecanismo}. O ciclo segue a seguinte sequência: a central observa cada mensagem uRLLC e mede a latência; o controlador verifica o limite de 5 ms e, se esse limite for ultrapassado, reduz a taxa máxima das filas eMBB de 20 para 2 Mbit/s \cite{linuxhtb}, aliviando a rede para o uRLLC. Todo esse processo é repetido e verificado pelo \textit{closed loop} para manter uma rede estável, principalmente para os sensores.
 
-        No caso do tráfego eMBB ser limitado ou ajustado para priorizar o tráfego uRLLC, é para o tráfego das câmeras não ser interrompido e manter a rede completamente ativa. O monitor não apenas ajusta as prioridades só baseado na primeira latência acima de 5 ms, para ativar e fazer os ajustes é usado um método chamado histerese, se houver limites acima de 5 ms duas vezes consecutivas então é ativado para ajustar o tráfego e quando voltar ao normal espera três medições sequenciais abaixo de 5 ms para desativar a proteção. 
+        No caso de o tráfego eMBB ser limitado ou ajustado para priorizar o tráfego uRLLC, o tráfego das câmeras não é interrompido e a rede permanece ativa. O monitor não ajusta as prioridades somente com base na primeira latência acima de 5 ms. Para ativar e realizar os ajustes, é utilizado um método chamado histerese: se houver latências acima de 5 ms duas vezes consecutivas, a proteção será ativada; quando a latência voltar ao normal, serão aguardadas três medições sequenciais abaixo de 5 ms para desativá-la.
         
 		
 	
@@ -215,15 +223,15 @@
 		\section{Avalia\c{c}\~ao}
 		% ===================================================================
 		
-		O projeto seguiu alguns pilares para demonstrar os resultados produzidos para a avaliação, são eles quatro cenários: Isolado; Sem QoS; QoS Estático e; Closed Loop. 
+		O projeto seguiu alguns pilares para demonstrar os resultados produzidos para a avaliação, que são quatro cenários: Isolado; Sem QoS; QoS Estático; e \textit{closed loop}.
 		
 		\subsection{Configura\c{c}\~ao Experimental}
 
-        O ambiente dos experimentos é todo virtualizado, desde os switches até os sensores. Tudo dentro do docker, usando linux e rodando no MacOS.  Foram realizado diversos testes, dos quatro cenários foram feito cinco em cada, totalizando uma bateria de 20 testes. 
+        O ambiente dos experimentos é todo virtualizado, desde os \textit{switches} até os sensores. Tudo é executado dentro do Docker, usando Linux e rodando no macOS. Foram realizados cinco testes para cada um dos quatro cenários, totalizando uma bateria de 20 testes.
 
         \subsection{Resultados e Discussões}
         
-        O primeiro cenário testado foi o isolado, nela apenas o tráfego uRLLC está ativo sem concorrer com o eMBB, nele só os sensores transmitem dados para a central. Com isso a latência se mostrou em todos os casos abaixo de 5 ms. A tabela de conformidade e a CDF apresentam melhor os resultados do cenário isolado. 
+        O primeiro cenário testado foi o isolado. Nele, apenas o tráfego uRLLC está ativo, sem concorrer com o eMBB; somente os sensores transmitem dados para a central. Com isso, a latência se mostrou abaixo de 5 ms em todos os casos. A tabela de conformidade e a CDF apresentam melhor os resultados do cenário isolado.
 
 		\begin{table}[ht]
 			\centering
@@ -238,7 +246,7 @@
 					Isolado & 8838 & 0 & 7 & 0,00 & 0,08 \\
 					Sem QoS & 1124 & 148 & 364 & 13,17 & 45,55 \\
 					QoS estático & 887 & 129 & 318 & 14,54 & 50,39 \\
-					Closed loop & 533 & 158 & 9 & 29,64 & 31,33 \\
+					\textit{Closed loop} & 533 & 158 & 9 & 29,64 & 31,33 \\
 					\bottomrule
 				\end{tabular}%
 			}
@@ -247,11 +255,11 @@
 		\begin{figure}[ht]
 			\centering
 			\includegraphics[width=\linewidth]{figuras/metricas_urllc.png}
-			\caption{Perdas, timeouts e não conformidade efetiva do tráfego uRLLC por cenário.}
+			\caption{Perdas, \textit{timeouts} e não conformidade efetiva do tráfego uRLLC por cenário.}
 			\label{fig:metricas-urllc}
 		\end{figure}
 
-		\sugestao{A Figura~\ref{fig:metricas-urllc} e a Tabela~\ref{tab:conformidade-urllc} mostram que a análise deve considerar todas as tentativas, incluindo perdas e timeouts. Sob essa métrica, o closed loop melhora o resultado em relação aos cenários concorrentes, mas ainda não garante o limite de 5 ms.}
+		\sugestao{A Figura~\ref{fig:metricas-urllc} e a Tabela~\ref{tab:conformidade-urllc} mostram que a análise deve considerar todas as tentativas, incluindo perdas e \textit{timeouts}. Sob essa métrica, o \textit{closed loop} melhora o resultado em relação aos cenários concorrentes, mas ainda não garante o limite de 5 ms.}
 
 		\begin{figure}[ht]
 			\centering
@@ -262,7 +270,7 @@
 
 		\sugestao{Na Figura~\ref{fig:cdf-urllc}, a linha vertical representa o limite de 5 ms. A comparação deve destacar a posição de cada curva em relação a esse limite e esclarecer que a CDF considera apenas amostras recebidas, não substituindo a métrica de não conformidade efetiva.}
 
-        O cenário sem QoS o tráfego fica sem "motorista" gerando recursos sem classificação de prioridade e afetando o desempenho da rede. Como é possível ver na figura de conformidade efetiva, obtém 45,55\% de vazão, com p95 de 1455,314 ms.  No cenário com QoS estático, a figura mostra os resultados, inclusive em comparação sem QoS. Nesse cenário o tráfego fica controlado e as comunicação uRLLC é colocada em uma fila de prioridade durante toda disponibilidade da rede, neste caso, não altera as configuração da rede independente das condições da mesma. Ainda usando o contexto estatístico, o resultado em p95 demonstrou um valor ainda alto, de 804,040 ms - isso por causa de perdas e timeouts na comunicação. Ainda assim houve uma melhora mas não suficiente para entregar segurança de entrega de 5 ms. 
+        No cenário sem QoS, o tráfego fica sem classificação de prioridade, afetando o desempenho da rede. Como é possível observar na figura de conformidade efetiva, a não conformidade foi de 45,55\%, com p95 de 1455,314 ms. No cenário com QoS estático, o tráfego uRLLC é colocado em uma fila de prioridade durante toda a execução; nesse caso, a configuração da rede não é alterada independentemente de suas condições. Ainda considerando a análise estatística, o p95 apresentou um valor alto, de 804,040 ms, devido a perdas e \textit{timeouts} na comunicação. Houve uma melhora, mas não suficiente para garantir o limite de 5 ms.
 
 		\begin{table}[ht]
 			\centering
@@ -277,15 +285,15 @@
 					Isolado & 0,476 & 1,029 & 1,707 & 0,14 \\
 					Sem QoS & 119,291 & 1455,314 & 1663,662 & 60,75 \\
 					QoS estático & 55,466 & 804,040 & 1367,169 & 53,28 \\
-					Closed loop & 0,896 & 3,233 & 367,283 & 3,39 \\
+					\textit{Closed loop} & 0,896 & 3,233 & 367,283 & 3,39 \\
 					\bottomrule
 				\end{tabular}%
 			}
 		\end{table}
 
-		\sugestao{A Tabela~\ref{tab:latencia-urllc} permite separar a melhoria da distribuição de latência do efeito das perdas. O QoS estático reduz os percentis em relação ao cenário sem QoS, mas o percentual de não conformidade efetiva permanece elevado porque os timeouts também são contabilizados.}
+		\sugestao{A Tabela~\ref{tab:latencia-urllc} permite separar a melhoria da distribuição de latência do efeito das perdas. O QoS estático reduz os percentis em relação ao cenário sem QoS, mas o percentual de não conformidade efetiva permanece elevado porque os \textit{timeouts} também são contabilizados.}
 
-        O último cenário dos teste foi o closed loop, o qual é o foco da proposta do projeto, Aqui o controlador monitora a latência uRLLC constantemente, após duas violações consecutivas do limite de 5ms, a taxa máxima da fila eMBB é reduzida de 20 para 2 Mbit/s. Quando as se obtém 3 consultas seguidas abaixo ou igual a 5 ms, o controlador ajusta tudo para o limite aceitável, restaurando a taxa do eMBB. A não conformidade efetiva foi reduzida para 31,33\%. No p95 apresentou valor de 3,233 ms entre os dados recebidos. O closed loop trouxe melhorias, obtendo 29,64\% de perdas ou timeouts. A vazão do eMBB caiu para 0,932 Mbit/s, tendo perda nesses testes, de 92,27\%. Protegeu o tráfego uRLLC mas com o custo de desfavorecer os serviços disponíveis do tráfego eMBB.
+        O último cenário dos testes foi o \textit{closed loop}, que é o foco da proposta do projeto. Aqui, o controlador monitora constantemente a latência uRLLC. Após duas violações consecutivas do limite de 5 ms, a taxa máxima da fila eMBB é reduzida de 20 para 2 Mbit/s. Quando são obtidas três medições seguidas abaixo ou iguais a 5 ms, o controlador restaura a taxa do eMBB. A não conformidade efetiva foi reduzida para 31,33\%. O p95 apresentou valor de 3,233 ms entre os dados recebidos. O \textit{closed loop} trouxe melhorias, mas apresentou 29,64\% de perdas ou \textit{timeouts}. A vazão do eMBB caiu para 0,932 Mbit/s, com perda de 92,27\% nesses testes. O mecanismo protegeu o tráfego uRLLC, mas com o custo de desfavorecer o serviço eMBB.
 
 		\begin{table}[ht]
 			\centering
@@ -298,7 +306,7 @@
 				\midrule
 				Sem QoS & 6,469 & 46,00 \\
 				QoS estático & 5,766 & 51,87 \\
-				Closed loop & 0,932 & 92,27 \\
+				\textit{Closed loop} & 0,932 & 92,27 \\
 				\bottomrule
 			\end{tabular}
 		\end{table}
@@ -319,6 +327,12 @@
 		% ===================================================================
 		\section{Conclus\~oes}
 		% ===================================================================
+
+		Este trabalho apresentou um sistema de monitoramento e prevenção de incêndios em um cenário de rede 5G emulada. A proposta utiliza sensores para gerar tráfego uRLLC e câmeras para gerar tráfego eMBB, conectados por quatro \textit{switches} Open vSwitch e monitorados por uma Central de Monitoramento. O controle da rede foi implementado com filas QoS e um controlador \textit{closed loop} capaz de ajustar a taxa do tráfego eMBB de acordo com a latência observada no tráfego uRLLC.
+
+		A avaliação foi realizada com quatro cenários e cinco repetições de 60 segundos para cada cenário. A não conformidade efetiva foi de 0,08\% no cenário isolado, 45,55\% no cenário sem QoS, 50,39\% no QoS estático e 31,33\% no \textit{closed loop}. Entre os pacotes recebidos, o \textit{closed loop} apresentou p95 de 3,233 ms; entretanto, ainda foram observados 29,64\% de perdas ou \textit{timeouts}. Portanto, a redução da não conformidade não representa uma garantia de que todas as tentativas atenderam ao limite de 5 ms.
+
+		Os resultados também mostraram um compromisso entre a proteção do uRLLC e o desempenho eMBB. No \textit{closed loop}, a vazão eMBB foi reduzida para 0,932 Mbit/s, com 92,27\% de perdas. Assim, o mecanismo demonstrou capacidade de reduzir a latência dos pacotes uRLLC recebidos sob concorrência, mas ainda precisa ser interpretado como uma estratégia de proteção parcial, cujo custo sobre o tráfego eMBB deve ser considerado. Como os experimentos foram realizados em ambiente emulado, os resultados caracterizam as condições avaliadas no laboratório e não constituem garantia de desempenho em uma rede 5G real.
 		
 		% As conclus\~oes encerram o artigo de forma objetiva. N\~ao
 		% apresente resultados novos aqui -- apenas consolide o que j\'a
