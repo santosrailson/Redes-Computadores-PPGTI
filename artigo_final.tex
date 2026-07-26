@@ -141,7 +141,7 @@
 			\label{fig:arquitetura}
 		\end{figure}
 
-		\sugestao{A Figura~\ref{fig:arquitetura} sintetiza o caminho dos fluxos uRLLC e eMBB desde os sensores e câmeras até a central. Ela também evidencia que os três locais compartilham a mesma rede de transporte, condição necessária para avaliar os efeitos da congestão e da atuação do controlador.}
+		A Figura~\ref{fig:arquitetura} mostra o caminho dos tráfegos de uRLLC e eMBB desde os sensores e câmeras até a central. Ela também evidencia que os três locais compartilham o mesmo meio de comunicação, dessa forma, é possível enxergar um cenário com possibilidades de congestionamento.
 		
 		% \subsection{Topologia e Bancada Experimental}
 		
@@ -259,7 +259,7 @@
 			\label{fig:metricas-urllc}
 		\end{figure}
 
-		\sugestao{A Figura~\ref{fig:metricas-urllc} e a Tabela~\ref{tab:conformidade-urllc} mostram que a análise deve considerar todas as tentativas, incluindo perdas e \textit{timeouts}. Sob essa métrica, o \textit{closed loop} melhora o resultado em relação aos cenários concorrentes, mas ainda não garante o limite de 5 ms.}
+		A Figura~\ref{fig:metricas-urllc} e a Tabela~\ref{tab:conformidade-urllc} mostram que a análise deve considerar todas as tentativas, incluindo perdas e \textit{timeouts}. Com essa métrica, o \textit{closed loop} melhora o resultado em relação aos cenários concorrentes, mas ainda não garante o limite de 5 ms.
 
 		\begin{figure}[ht]
 			\centering
@@ -268,9 +268,9 @@
 			\label{fig:cdf-urllc}
 		\end{figure}
 
-		\sugestao{Na Figura~\ref{fig:cdf-urllc}, a linha vertical representa o limite de 5 ms. A comparação deve destacar a posição de cada curva em relação a esse limite e esclarecer que a CDF considera apenas amostras recebidas, não substituindo a métrica de não conformidade efetiva.}
+		Na Figura~\ref{fig:cdf-urllc}, a linha tracejada na vertical de cor vermelha representa o limite de 5 ms. A comparação deve destacar a posição de cada curva em relação a esse limite e esclarecer que a CDF considera apenas amostras recebidas, não substituindo a métrica de não conformidade efetiva.
 
-        No cenário sem QoS, o tráfego fica sem classificação de prioridade, afetando o desempenho da rede. Como é possível observar na figura de conformidade efetiva, a não conformidade foi de 45,55\%, com p95 de 1455,314 ms. No cenário com QoS estático, o tráfego uRLLC é colocado em uma fila de prioridade durante toda a execução; nesse caso, a configuração da rede não é alterada independentemente de suas condições. Ainda considerando a análise estatística, o p95 apresentou um valor alto, de 804,040 ms, devido a perdas e \textit{timeouts} na comunicação. Houve uma melhora, mas não suficiente para garantir o limite de 5 ms.
+        No cenário sem QoS, o tráfego fica sem classificação de prioridade, afetando o desempenho da rede. Como é possível observar na figura de conformidade de tráfego, a não conformidade foi de 45,55\%, com p95 de 1455,314 ms. No cenário com QoS estático, o tráfego uRLLC é colocado em uma fila de prioridade durante toda a execução; nesse caso, a configuração da rede não é alterada independentemente de suas condições. Ainda considerando a análise estatística, o p95 apresentou um valor alto, de 804,040 ms, devido a perdas e \textit{timeouts} na comunicação. Houve uma melhora, mas não suficiente para garantir o limite de 5 ms.
 
 		\begin{table}[ht]
 			\centering
@@ -291,7 +291,7 @@
 			}
 		\end{table}
 
-		\sugestao{A Tabela~\ref{tab:latencia-urllc} permite separar a melhoria da distribuição de latência do efeito das perdas. O QoS estático reduz os percentis em relação ao cenário sem QoS, mas o percentual de não conformidade efetiva permanece elevado porque os \textit{timeouts} também são contabilizados.}
+		A Tabela~\ref{tab:latencia-urllc} permite separar a melhoria da distribuição de latência do efeito das perdas. O QoS estático reduz os percentis em relação ao cenário sem QoS, mas o percentual de não conformidade efetiva permanece elevado porque os \textit{timeouts} também são contabilizados.
 
         O último cenário dos testes foi o \textit{closed loop}, que é o foco da proposta do projeto. Aqui, o controlador monitora constantemente a latência uRLLC. Após duas violações consecutivas do limite de 5 ms, a taxa máxima da fila eMBB é reduzida de 20 para 2 Mbit/s. Quando são obtidas três medições seguidas abaixo ou iguais a 5 ms, o controlador restaura a taxa do eMBB. A não conformidade efetiva foi reduzida para 31,33\%. O p95 apresentou valor de 3,233 ms entre os dados recebidos. O \textit{closed loop} trouxe melhorias, mas apresentou 29,64\% de perdas ou \textit{timeouts}. A vazão do eMBB caiu para 0,932 Mbit/s, com perda de 92,27\% nesses testes. O mecanismo protegeu o tráfego uRLLC, mas com o custo de desfavorecer o serviço eMBB.
 
@@ -318,7 +318,6 @@
 			\label{fig:vazao-embb}
 		\end{figure}
 
-		\sugestao{A Figura~\ref{fig:vazao-embb} e a Tabela~\ref{tab:vazao-embb} evidenciam o custo da política reativa. A redução da vazão eMBB deve ser apresentada como um compromisso de projeto: o controlador protege parcialmente a latência uRLLC, mas degrada significativamente o serviço de vídeo.}
 
 		\FloatBarrier
 		
